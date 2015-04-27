@@ -14,21 +14,31 @@ ques=[]
 urlhash=[]
 
 def crawlone(url,curdepth):
+    print url
     req = urllib2.Request(url)
     req.add_header('Accept-encoding','gzip')
     try:
         res = urllib2.urlopen(req)
         #有的网站数据是经过gzip压缩的，如qq.com,sina.com.cn等
-        print ("%s-%s-%s")%(res.info().get('Content-Encoding'),res.info().get('Content-Type'),url)
-        if res.info().get('Content-Encoding')=='gzip':
-            buf = StringIO(res.read())
-            f = gzip.GzipFile(fileobj=buf)
-            content = f.read()
+        contentType = res.info().get('Content-Type')
+        if contentType:
+            m = re.match(r'text/html.*',contentType)
+            if m:
+                print ("%s-%s-%s")%(res.info().get('Content-Encoding'),contentType,url)
+                if res.info().get('Content-Encoding')=='gzip':
+                    buf = StringIO(res.read())
+                    f = gzip.GzipFile(fileobj=buf)
+                    content = f.read()
+                else:
+                    content = res.read()
+            else:
+                print ("\033[1;31;40m*%s\033[0m")%(url,)
+                return
         else:
-            content = res.read()
+            return
     except URLError,e:
-        print ("%s-%s")%(e,url)
-        sys.exit(0)
+        print ("\033[1;31;40m%s-%s\033[0m")%(e,url)
+        return
     analysis(content,curdepth)
 
 def crawFromQue(que,curdepth):
