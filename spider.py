@@ -13,8 +13,17 @@ config={"url":"http://www.baidu.com","depth":1}
 ques=[]
 urlhash=[]
 
+logger = logging.getLogger('push')
+logger.setLevel(logging.DEBUG)
+#ch = logging.StreamHandler()
+ch = logging.FileHandler("spider.log")
+ch.setLevel(logging.DEBUG)
+fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+ch.setFormatter(fm)
+logger.addHandler(ch)
+
 def crawlone(url,curdepth):
-    print url
+    #print url
     req = urllib2.Request(url)
     req.add_header('Accept-encoding','gzip')
     try:
@@ -49,8 +58,9 @@ def crawFromQue(que,curdepth):
 def analysis(content,curdepth):
     global ques
     global config
+    global logger 
     msg={}
-    soup = BeautifulSoup(content)
+    #soup = BeautifulSoup(content)
     #print soup.title.string
     #f = open("/tmp/body.html","w+")
     links = re.findall(r'href\=\"(http\:\/\/[a-zA-Z0-9\.\/\=]+)\"',content)
@@ -59,6 +69,8 @@ def analysis(content,curdepth):
         if hash(l) in urlhash:
             continue
         elif curdepth < config["depth"]:
+            logger.info(l)
+
             ques[curdepth+1].put(l)
             urlhash.append(hash(l))
 
