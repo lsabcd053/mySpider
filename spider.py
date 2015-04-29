@@ -2,9 +2,7 @@
 #coding=utf-8
 import sys,re
 import Queue
-import urllib2,cookielib
-import gzip
-import logging
+import urllib2,cookielib,gzip,logging
 from StringIO import StringIO
 from bs4 import BeautifulSoup
 from urllib2 import Request, urlopen, URLError, HTTPError
@@ -22,6 +20,8 @@ fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 ch.setFormatter(fm)
 logger.addHandler(ch)
 
+def log(msg,logname,level,selflevel):
+    pass
 def crawlone(url,curdepth):
     #print url
     cj = cookielib.CookieJar()
