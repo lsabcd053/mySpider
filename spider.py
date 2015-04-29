@@ -74,7 +74,7 @@ def analysis(content,curdepth):
             continue
         elif curdepth < config["depth"]-1:
             #logger.info(l)
-            log().info(l)
+            log(__name__).info(l)
 
             ques[curdepth+1].put(l)
             urlhash.append(hash(l))
