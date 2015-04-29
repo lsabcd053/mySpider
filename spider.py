@@ -1,27 +1,29 @@
 #!/usr/bin/python 
 #coding=utf-8
-import sys,re
+import sys,os,re
 import Queue
 import urllib2,cookielib,gzip,logging
 from StringIO import StringIO
 from bs4 import BeautifulSoup
 from urllib2 import Request, urlopen, URLError, HTTPError
 
-config={"url":"http://www.baidu.com","depth":1}
+config={"url":"http://www.baidu.com","depth":1,"logfile":"spider.log","loglevel":1}
 ques=[]
 urlhash=[]
 
-logger = logging.getLogger('push')
-logger.setLevel(logging.DEBUG)
-#ch = logging.StreamHandler()
-ch = logging.FileHandler("spider.log")
-ch.setLevel(logging.DEBUG)
-fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-ch.setFormatter(fm)
-logger.addHandler(ch)
+LEVEL={1:logging.CRITICAL,2:logging.ERROR,3:logging.WARNING,4:logging.INFO,5:logging.DEBUG}
 
-def log(msg,logname,level,selflevel):
-    pass
+def log(logname=__name__):
+	global config
+    logger = logging.getLogger(logname)
+	logger.setLevel(LEVEL[config[loglevel]])
+
+	ch = logging.FileHandler(config[logfile])
+	ch.setLevel(LEVEL[config[loglevel]])
+	fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
+	ch.setFormatter(fm)
+	logger.addHandler(ch)
+	return logger
 def crawlone(url,curdepth):
     #print url
     cj = cookielib.CookieJar()
@@ -60,7 +62,6 @@ def crawFromQue(que,curdepth):
 def analysis(content,curdepth):
     global ques
     global config
-    global logger 
     msg={}
     #soup = BeautifulSoup(content)
     #print soup.title.string
@@ -72,7 +73,8 @@ def analysis(content,curdepth):
         if hash(l) in urlhash:
             continue
         elif curdepth < config["depth"]-1:
-            logger.info(l)
+            #logger.info(l)
+            log().info(l)
 
             ques[curdepth+1].put(l)
             urlhash.append(hash(l))
@@ -92,9 +94,13 @@ def main(argc,argv):
             if i % 2 ==1:
                 s = argv[i]
                 if s in ("--url","-u"):
-                    config['url'] = argv[i+1]
+                    config["url"] = argv[i+1]
                 elif s in ("--depth","-d"):
                     config["depth"] = int(argv[i+1])
+                elif s in ("--logfile","-f")
+                	config["logfile"] = argv[i+1]
+                elif s in ("--loglevel","-l")
+                	config["loglevel"]=int(argv[i+1])
     init()
     crawlone(config["url"],0)
     for i in range(1,config['depth']):
