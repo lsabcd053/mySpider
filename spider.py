@@ -2,7 +2,7 @@
 #coding=utf-8
 import sys,re
 import Queue
-import urllib2
+import urllib2,cookielib
 import gzip
 import logging
 from StringIO import StringIO
@@ -24,10 +24,12 @@ logger.addHandler(ch)
 
 def crawlone(url,curdepth):
     #print url
+    cj = cookielib.CookieJar()
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     req = urllib2.Request(url)
     req.add_header('Accept-encoding','gzip')
     try:
-        res = urllib2.urlopen(req)
+        res = opener.open(req)
         #有的网站数据是经过gzip压缩的，如qq.com,sina.com.cn等
         contentType = res.info().get('Content-Type')
         if contentType:
@@ -63,12 +65,13 @@ def analysis(content,curdepth):
     #soup = BeautifulSoup(content)
     #print soup.title.string
     #f = open("/tmp/body.html","w+")
-    links = re.findall(r'href\=\"(http\:\/\/[a-zA-Z0-9\.\/\=]+)\"',content)
+
+    links = re.findall(r'href\=\"(http\:\/\/[a-zA-Z0-9\.\/\=\?]*)\"',content)
     #f.write(soup.body.get_text())
     for l in links:
         if hash(l) in urlhash:
             continue
-        elif curdepth < config["depth"]:
+        elif curdepth < config["depth"]-1:
             logger.info(l)
 
             ques[curdepth+1].put(l)
