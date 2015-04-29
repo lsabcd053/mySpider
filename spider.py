@@ -97,9 +97,9 @@ def main(argc,argv):
                     config["url"] = argv[i+1]
                 elif s in ("--depth","-d"):
                     config["depth"] = int(argv[i+1])
-                elif s in ("--logfile","-f")
+                elif s in ("--logfile","-f"):
                     config["logfile"] = argv[i+1]
-                elif s in ("--loglevel","-l")
+                elif s in ("--loglevel","-l"):
                     config["loglevel"]=int(argv[i+1])
     init()
     crawlone(config["url"],0)
