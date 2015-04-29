@@ -10,11 +10,12 @@ from urllib2 import Request, urlopen, URLError, HTTPError
 config={"url":"http://www.baidu.com","depth":1,"logfile":"spider.log","loglevel":3}
 ques=[]
 urlhash=[]
+logger=''
 
 LEVEL={1:logging.CRITICAL,2:logging.ERROR,3:logging.WARNING,4:logging.INFO,5:logging.DEBUG}
 
 def log(logname=__name__):
-    global config
+    global config,logger
     logger = logging.getLogger(logname)
     logger.setLevel(LEVEL[config["loglevel"]])
 
@@ -24,10 +25,9 @@ def log(logname=__name__):
     fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(thread)d - %(message)s")
     ch.setFormatter(fm)
     logger.addHandler(ch)
-    return logger
+
 def crawlone(url,curdepth):
-    log().info("Begin to crawl %s depth:%d"%(config['url'],curdepth))
-    log().info("lsabcd")
+    logger.info("Begin to crawl %s depth:%d"%(config['url'],curdepth))
     cj = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     req = urllib2.Request(url)
@@ -47,13 +47,13 @@ def crawlone(url,curdepth):
                 else:
                     content = res.read()
             else:
-                log().error(url)
+                logger.error(url)
                 print ("\033[1;31;40m*%s\033[0m")%(url,)
                 return
         else:
             return
     except URLError,e:
-        log().error(("%s,%s")%(e,url))
+        logger.error(("%s,%s")%(e,url))
         print ("\033[1;31;40m%s-%s\033[0m")%(e,url)
         return
     analysis(content,curdepth)
@@ -78,13 +78,14 @@ def analysis(content,curdepth):
             continue
         elif curdepth < config["depth"]-1:
             #logger.info(l)
-            log(__name__).info(l)
+            logger.info(l)
 
             ques[curdepth+1].put(l)
             urlhash.append(hash(l))
 
 def init():
     global ques
+    log()
     for i in range(config["depth"]+1):
         ques.append(Queue.Queue())
 
@@ -106,10 +107,9 @@ def main(argc,argv):
                 elif s in ("--loglevel","-l"):
                     config["loglevel"]=int(argv[i+1])
     init()
-    log().info("Begin to crawl %s,depth:%d logfile:%s"%(config['url'],config['depth'],config['logfile']))
+    logger.info("Begin to crawl %s,depth:%d logfile:%s"%(config['url'],config['depth'],config['logfile']))
     crawlone(config["url"],0)
     for i in range(1,config['depth']):
-        #pass
         crawFromQue(ques[i],i)
 
 def help():
