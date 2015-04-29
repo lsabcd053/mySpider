@@ -14,16 +14,16 @@ urlhash=[]
 LEVEL={1:logging.CRITICAL,2:logging.ERROR,3:logging.WARNING,4:logging.INFO,5:logging.DEBUG}
 
 def log(logname=__name__):
-	global config
+    global config
     logger = logging.getLogger(logname)
-	logger.setLevel(LEVEL[config[loglevel]])
+    logger.setLevel(LEVEL[config[loglevel]])
 
-	ch = logging.FileHandler(config[logfile])
-	ch.setLevel(LEVEL[config[loglevel]])
-	fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
-	ch.setFormatter(fm)
-	logger.addHandler(ch)
-	return logger
+    ch = logging.FileHandler(config[logfile])
+    ch.setLevel(LEVEL[config[loglevel]])
+    fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
+    ch.setFormatter(fm)
+    logger.addHandler(ch)
+    return logger
 def crawlone(url,curdepth):
     #print url
     cj = cookielib.CookieJar()
@@ -98,9 +98,9 @@ def main(argc,argv):
                 elif s in ("--depth","-d"):
                     config["depth"] = int(argv[i+1])
                 elif s in ("--logfile","-f")
-                	config["logfile"] = argv[i+1]
+                    config["logfile"] = argv[i+1]
                 elif s in ("--loglevel","-l")
-                	config["loglevel"]=int(argv[i+1])
+                    config["loglevel"]=int(argv[i+1])
     init()
     crawlone(config["url"],0)
     for i in range(1,config['depth']):
