@@ -7,7 +7,7 @@ from StringIO import StringIO
 from bs4 import BeautifulSoup
 from urllib2 import Request, urlopen, URLError, HTTPError
 
-config={"url":"http://www.baidu.com","depth":1,"logfile":"spider.log","loglevel":1}
+config={"url":"http://www.baidu.com","depth":1,"logfile":"spider.log","loglevel":3}
 ques=[]
 urlhash=[]
 
@@ -16,16 +16,18 @@ LEVEL={1:logging.CRITICAL,2:logging.ERROR,3:logging.WARNING,4:logging.INFO,5:log
 def log(logname=__name__):
     global config
     logger = logging.getLogger(logname)
-    logger.setLevel(LEVEL[config[loglevel]])
+    logger.setLevel(LEVEL[config["loglevel"]])
 
-    ch = logging.FileHandler(config[logfile])
-    ch.setLevel(LEVEL[config[loglevel]])
-    fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(thread)d - %(message)s")
+    #ch = logging.FileHandler(config["logfile"])
+    ch = logging.StreamHandler()
+    ch.setLevel(LEVEL[config["loglevel"]])
+    fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(thread)d - %(message)s")
     ch.setFormatter(fm)
     logger.addHandler(ch)
     return logger
 def crawlone(url,curdepth):
-    #print url
+    log().info("Begin to crawl %s depth:%d"%(config['url'],curdepth))
+    log().info("lsabcd")
     cj = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     req = urllib2.Request(url)
@@ -37,7 +39,7 @@ def crawlone(url,curdepth):
         if contentType:
             m = re.match(r'text/html.*',contentType)
             if m:
-                print ("%s-%s-%s")%(res.info().get('Content-Encoding'),contentType,url)
+                #print ("%s-%s-%s")%(res.info().get('Content-Encoding'),contentType,url)
                 if res.info().get('Content-Encoding')=='gzip':
                     buf = StringIO(res.read())
                     f = gzip.GzipFile(fileobj=buf)
@@ -45,11 +47,13 @@ def crawlone(url,curdepth):
                 else:
                     content = res.read()
             else:
+                log().error(url)
                 print ("\033[1;31;40m*%s\033[0m")%(url,)
                 return
         else:
             return
     except URLError,e:
+        log().error(("%s,%s")%(e,url))
         print ("\033[1;31;40m%s-%s\033[0m")%(e,url)
         return
     analysis(content,curdepth)
@@ -102,6 +106,7 @@ def main(argc,argv):
                 elif s in ("--loglevel","-l"):
                     config["loglevel"]=int(argv[i+1])
     init()
+    log().info("Begin to crawl %s,depth:%d logfile:%s"%(config['url'],config['depth'],config['logfile']))
     crawlone(config["url"],0)
     for i in range(1,config['depth']):
         #pass
