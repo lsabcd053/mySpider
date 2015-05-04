@@ -7,7 +7,7 @@ from StringIO import StringIO
 from bs4 import BeautifulSoup
 from urllib2 import Request, urlopen, URLError, HTTPError
 
-config={"url":"http://www.baidu.com","depth":1,"logfile":"spider.log","loglevel":3}
+config={"url":"http://www.baidu.com","depth":1,"logfile":"spider.log","loglevel":3,"thread":0}
 ques=[]
 urlhash=[]
 logger=''
@@ -22,7 +22,7 @@ def log(logname=__name__):
     ch = logging.FileHandler(config["logfile"])
     #ch = logging.StreamHandler()
     ch.setLevel(LEVEL[config["loglevel"]])
-    fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(thread)d - %(message)s")
+    fm = logging.Formatter("%(asctime)s - %(levelname)s - %(funcName)s - %(threadName)s - %(message)s")
     ch.setFormatter(fm)
     logger.addHandler(ch)
 
@@ -76,22 +76,26 @@ class crawThread(threading.Thread):
         crawlone(self.url,self.curdepth)
 
 def crawFromQue(que,curdepth):
-    threads=[]
-    while not que.empty():
-        #try:
-        #    url = que.get()
-        #    ctd = crawThread(url,curdepth)
-        #    ctd.start()
-        #    threads.append(ctd)
-        #except BaseException,e:
-        #    print threading.currentThread().getName(),":",e
-        #    #print threading.currentThread().getNum(),'quit'
-        url = que.get()
-        ctd = crawThread(url,curdepth)
-        ctd.start()
-        threads.append(ctd)
-    for t in threads:
-    	t.join()
+    global config,logger
+    #多线程处理
+    if config['thread'] > 0:
+        threads=[]
+        while not que.empty():
+            url = que.get()
+            try:
+                ctd = crawThread(url,curdepth)
+                ctd.start()
+                threads.append(ctd)
+            except BaseException,e:
+                print threading.currentThread().getName(),":",e
+                logger.error("%s - %s"%(e,url))
+                #print threading.currentThread().getNum(),'quit'
+        for t in threads:
+            t.join()
+    #单线程处理
+    else:
+        while not que.empty():
+            crawlone(que.get(),curdepth)
 
 def analysis(content,curdepth):
     global ques
@@ -109,7 +113,6 @@ def analysis(content,curdepth):
         elif curdepth < config["depth"]-1:
             #logger.info(l)
             logger.info(l)
-
             ques[curdepth+1].put(l)
             urlhash.append(hash(l))
 
@@ -136,6 +139,8 @@ def main(argc,argv):
                     config["logfile"] = argv[i+1]
                 elif s in ("--loglevel","-l"):
                     config["loglevel"]=int(argv[i+1])
+                elif s in ("--thread","-t"):
+                    config["thread"]=int(argv[i+1])
     init()
     logger.info("Begin to crawl %s,depth:%d logfile:%s"%(config['url'],config['depth'],config['logfile']))
     crawlone(config["url"],0)
