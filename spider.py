@@ -19,15 +19,15 @@ def log(logname=__name__):
     logger = logging.getLogger(logname)
     logger.setLevel(LEVEL[config["loglevel"]])
 
-    #ch = logging.FileHandler(config["logfile"])
-    ch = logging.StreamHandler()
+    ch = logging.FileHandler(config["logfile"])
+    #ch = logging.StreamHandler()
     ch.setLevel(LEVEL[config["loglevel"]])
     fm = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(thread)d - %(message)s")
     ch.setFormatter(fm)
     logger.addHandler(ch)
 
 def crawlone(url,curdepth):
-    logger.info("Begin to crawl %s depth:%d"%(config['url'],curdepth))
+    logger.info("Begin to crawl %s depth:%d"%(url,curdepth))
     cj = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     req = urllib2.Request(url)
@@ -52,7 +52,7 @@ def crawlone(url,curdepth):
                 return
         else:
             return
-    except URLError,e:
+    except (URLError,IOError),e:
         logger.error(("%s,%s")%(e,url))
         print ("\033[1;31;40m%s-%s\033[0m")%(e,url)
         return
@@ -61,7 +61,8 @@ def crawlone(url,curdepth):
 def crawFromQue(que,curdepth):
     print curdepth
     while not que.empty():
-        crawlone(que.get(),curdepth)
+        qurl = que.get()
+        crawlone(qurl,curdepth)
 
 def analysis(content,curdepth):
     global ques
