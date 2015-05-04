@@ -1,6 +1,6 @@
 #!/usr/bin/python 
 #coding=utf-8
-import sys,os,re
+import sys,os,re,threading
 import Queue
 import urllib2,cookielib,gzip,logging
 from StringIO import StringIO
@@ -26,8 +26,10 @@ def log(logname=__name__):
     ch.setFormatter(fm)
     logger.addHandler(ch)
 
+
 def crawlone(url,curdepth):
-    logger.info("Begin to crawl %s depth:%d"%(url,curdepth))
+    global logger
+    logger.info("Begin to crawl %s depth:%d"%(config['url'],curdepth))
     cj = cookielib.CookieJar()
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
     req = urllib2.Request(url)
@@ -37,13 +39,19 @@ def crawlone(url,curdepth):
         #有的网站数据是经过gzip压缩的，如qq.com,sina.com.cn等
         contentType = res.info().get('Content-Type')
         if contentType:
+            logger.info("%s-%s"%(url,contentType))
             m = re.match(r'text/html.*',contentType)
             if m:
                 #print ("%s-%s-%s")%(res.info().get('Content-Encoding'),contentType,url)
                 if res.info().get('Content-Encoding')=='gzip':
-                    buf = StringIO(res.read())
-                    f = gzip.GzipFile(fileobj=buf)
-                    content = f.read()
+                    try:
+                        buf = StringIO(res.read())
+                        f = gzip.GzipFile(fileobj=buf)
+                        content = f.read()
+                    except IOError,e:
+                        logger.error('%s:%s'%(e,url))
+                        print ("\033[1;31;40m*%s:%s\033[0m")%(e,url)
+                        content = f.extrabuf
                 else:
                     content = res.read()
             else:
@@ -52,21 +60,42 @@ def crawlone(url,curdepth):
                 return
         else:
             return
-    except (URLError,IOError),e:
+    except URLError,e:
         logger.error(("%s,%s")%(e,url))
         print ("\033[1;31;40m%s-%s\033[0m")%(e,url)
         return
     analysis(content,curdepth)
 
+class crawThread(threading.Thread):
+    def __init__(self,url,curdepth):
+        threading.Thread.__init__(self)
+        self.url = url
+        self.curdepth = curdepth
+        print url,curdepth
+    def run(self):
+        crawlone(self.url,self.curdepth)
+
 def crawFromQue(que,curdepth):
-    print curdepth
+    threads=[]
     while not que.empty():
-        qurl = que.get()
-        crawlone(qurl,curdepth)
+        #try:
+        #    url = que.get()
+        #    ctd = crawThread(url,curdepth)
+        #    ctd.start()
+        #    threads.append(ctd)
+        #except BaseException,e:
+        #    print threading.currentThread().getName(),":",e
+        #    #print threading.currentThread().getNum(),'quit'
+        url = que.get()
+        ctd = crawThread(url,curdepth)
+        ctd.start()
+        threads.append(ctd)
+    for t in threads:
+    	t.join()
 
 def analysis(content,curdepth):
     global ques
-    global config
+    global config,logger
     msg={}
     #soup = BeautifulSoup(content)
     #print soup.title.string
@@ -91,7 +120,7 @@ def init():
         ques.append(Queue.Queue())
 
 def main(argc,argv):
-    global config
+    global config,logger
     if(argc < 2 or argv[1] == "--help"):
         help()
         sys.exit(0)
@@ -120,10 +149,12 @@ def help():
     --help  | -h: help
     '''
     print msg
+
+		
 if __name__ == "__main__":
     main(len(sys.argv),sys.argv)
-    for q in ques:
-        while not q.empty():
-            print q.get()
+#    for q in ques:
+#        while not q.empty():
+#            print q.get()
 #    for k in config.keys():
 #        print config[k]
